@@ -4,9 +4,9 @@ import { cookies } from 'next/headers';
 export async function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
+
   if (!url || !key) {
-    // Return a mock client during build
+    // During build, return a mock client
     return {
       auth: {
         getUser: async () => ({ data: { user: null }, error: null }),
@@ -14,9 +14,9 @@ export async function createClient() {
       from: () => ({
         select: () => ({ eq: () => ({ eq: () => ({ single: async () => ({ data: null }) }) }) }),
       }),
-    } as any;
+    } as unknown as ReturnType<typeof createServerClient>;
   }
-  
+
   const cookieStore = await cookies();
 
   return createServerClient(url, key, {

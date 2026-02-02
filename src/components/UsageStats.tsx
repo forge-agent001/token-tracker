@@ -50,7 +50,7 @@ export default function UsageStats({ hasAnthropicAdminKey, hasMoonshotKey }: Usa
           setMoonshotStats(data);
         }
       }
-    } catch (err) {
+    } catch {
       setError('Failed to fetch usage stats');
     } finally {
       setLoading(false);
@@ -59,6 +59,7 @@ export default function UsageStats({ hasAnthropicAdminKey, hasMoonshotKey }: Usa
 
   useEffect(() => {
     fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasAnthropicAdminKey, hasMoonshotKey]);
 
   return (

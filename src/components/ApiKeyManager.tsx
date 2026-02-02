@@ -33,7 +33,7 @@ export default function ApiKeyManager({
       
       setMessage({ type: 'success', text: 'Anthropic Admin API key saved!' });
       setAnthropicAdminKey('');
-    } catch (err) {
+    } catch {
       setMessage({ type: 'error', text: 'Failed to save API key' });
     } finally {
       setSaving(false);
@@ -57,7 +57,7 @@ export default function ApiKeyManager({
       
       setMessage({ type: 'success', text: 'Moonshot API key saved!' });
       setMoonshotKey('');
-    } catch (err) {
+    } catch {
       setMessage({ type: 'error', text: 'Failed to save API key' });
     } finally {
       setSaving(false);
@@ -76,7 +76,7 @@ export default function ApiKeyManager({
       
       setMessage({ type: 'success', text: `${provider} API key deleted!` });
       window.location.reload();
-    } catch (err) {
+    } catch {
       setMessage({ type: 'error', text: 'Failed to delete API key' });
     }
   };
