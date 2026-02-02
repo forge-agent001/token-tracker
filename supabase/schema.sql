@@ -45,6 +45,17 @@ CREATE INDEX IF NOT EXISTS idx_api_keys_provider ON api_keys(provider);
 CREATE INDEX IF NOT EXISTS idx_usage_cache_user_id ON usage_cache(user_id);
 CREATE INDEX IF NOT EXISTS idx_usage_cache_provider ON usage_cache(provider);
 
+-- Migration: Fix provider check constraints to include 'anthropic-admin'
+-- First drop existing constraints if they have old values
+ALTER TABLE api_keys DROP CONSTRAINT IF EXISTS api_keys_provider_check;
+ALTER TABLE usage_cache DROP CONSTRAINT IF EXISTS usage_cache_provider_check;
+
+-- Add corrected constraints
+ALTER TABLE api_keys ADD CONSTRAINT api_keys_provider_check 
+  CHECK (provider IN ('anthropic-admin', 'moonshot'));
+ALTER TABLE usage_cache ADD CONSTRAINT usage_cache_provider_check 
+  CHECK (provider IN ('anthropic-admin', 'moonshot'));
+
 -- Migration: Remove old 'anthropic' keys (regular API keys, not admin)
 DELETE FROM api_keys WHERE provider = 'anthropic';
 DELETE FROM usage_cache WHERE provider = 'anthropic';
