@@ -47,7 +47,7 @@ export async function GET() {
         `ending_at=${endDate.toISOString()}`,
         {
           headers: {
-            'Authorization': `Bearer ${adminKey}`,
+            'X-Api-Key': adminKey,
             'anthropic-version': '2023-06-01',
           },
         }
