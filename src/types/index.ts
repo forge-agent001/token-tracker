@@ -1,4 +1,4 @@
-export type Provider = 'anthropic' | 'anthropic-admin' | 'moonshot';
+export type Provider = 'anthropic-admin' | 'moonshot';
 
 export interface ApiKey {
   id: string;

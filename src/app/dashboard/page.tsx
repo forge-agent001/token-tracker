@@ -17,14 +17,12 @@ export default async function DashboardPage() {
     .select('*')
     .eq('user_id', user.id);
 
-  const anthropicKey = apiKeys?.find((k: { provider: string }) => k.provider === 'anthropic');
   const anthropicAdminKey = apiKeys?.find((k: { provider: string }) => k.provider === 'anthropic-admin');
   const moonshotKey = apiKeys?.find((k: { provider: string }) => k.provider === 'moonshot');
 
   return (
     <Dashboard 
       user={user} 
-      hasAnthropicKey={!!anthropicKey}
       hasAnthropicAdminKey={!!anthropicAdminKey}
       hasMoonshotKey={!!moonshotKey}
     />

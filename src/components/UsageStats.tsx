@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 
 interface UsageStatsProps {
-  hasAnthropicKey: boolean;
   hasAnthropicAdminKey: boolean;
   hasMoonshotKey: boolean;
 }
@@ -25,7 +24,7 @@ interface MoonshotStats {
   voucherBalance?: number;
 }
 
-export default function UsageStats({ hasAnthropicKey, hasAnthropicAdminKey, hasMoonshotKey }: UsageStatsProps) {
+export default function UsageStats({ hasAnthropicAdminKey, hasMoonshotKey }: UsageStatsProps) {
   const [loading, setLoading] = useState(false);
   const [anthropicStats, setAnthropicStats] = useState<AnthropicStats | null>(null);
   const [moonshotStats, setMoonshotStats] = useState<MoonshotStats | null>(null);
@@ -36,7 +35,7 @@ export default function UsageStats({ hasAnthropicKey, hasAnthropicAdminKey, hasM
     setError(null);
 
     try {
-      if (hasAnthropicKey || hasAnthropicAdminKey) {
+      if (hasAnthropicAdminKey) {
         const res = await fetch('/api/anthropic/usage');
         if (res.ok) {
           const data = await res.json();
@@ -60,7 +59,7 @@ export default function UsageStats({ hasAnthropicKey, hasAnthropicAdminKey, hasM
 
   useEffect(() => {
     fetchStats();
-  }, [hasAnthropicKey, hasAnthropicAdminKey, hasMoonshotKey]);
+  }, [hasAnthropicAdminKey, hasMoonshotKey]);
 
   return (
     <div className="space-y-8">
@@ -87,12 +86,12 @@ export default function UsageStats({ hasAnthropicKey, hasAnthropicAdminKey, hasM
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Anthropic</h3>
-            <div className={`w-3 h-3 rounded-full ${hasAnthropicAdminKey ? 'bg-green-500' : hasAnthropicKey ? 'bg-yellow-500' : 'bg-gray-300'}`} />
+            <div className={`w-3 h-3 rounded-full ${hasAnthropicAdminKey ? 'bg-green-500' : 'bg-gray-300'}`} />
           </div>
 
-          {!hasAnthropicKey && !hasAnthropicAdminKey ? (
+          {!hasAnthropicAdminKey ? (
             <p className="text-gray-500 text-sm">
-              Add your Anthropic API key in the API Keys tab to see usage stats.
+              Add your Anthropic Admin API key in the API Keys tab to see usage stats.
             </p>
           ) : anthropicStats?.requiresAdminKey ? (
             <div className="space-y-4">

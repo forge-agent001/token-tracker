@@ -8,14 +8,12 @@ import UsageStats from './UsageStats';
 
 interface DashboardProps {
   user: User;
-  hasAnthropicKey: boolean;
   hasAnthropicAdminKey: boolean;
   hasMoonshotKey: boolean;
 }
 
 export default function Dashboard({ 
   user, 
-  hasAnthropicKey, 
   hasAnthropicAdminKey,
   hasMoonshotKey 
 }: DashboardProps) {
@@ -79,7 +77,6 @@ export default function Dashboard({
 
         {activeTab === 'overview' && (
           <UsageStats 
-            hasAnthropicKey={hasAnthropicKey}
             hasAnthropicAdminKey={hasAnthropicAdminKey}
             hasMoonshotKey={hasMoonshotKey}
           />
@@ -87,7 +84,6 @@ export default function Dashboard({
 
         {activeTab === 'settings' && (
           <ApiKeyManager 
-            hasAnthropicKey={hasAnthropicKey}
             hasAnthropicAdminKey={hasAnthropicAdminKey}
             hasMoonshotKey={hasMoonshotKey}
           />
