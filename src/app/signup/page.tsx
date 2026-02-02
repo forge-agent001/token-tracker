@@ -1,18 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const router = useRouter();
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const supabase = createClient();
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -20,21 +16,9 @@ export default function SignupPage() {
     setLoading(true);
     setError(null);
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      setLoading(false);
-      return;
-    }
-
-    const { error } = await supabase.auth.signUp({
+    // signInWithOtp handles both new and existing users
+    const { error } = await supabase.auth.signInWithOtp({
       email,
-      password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -46,7 +30,7 @@ export default function SignupPage() {
       return;
     }
 
-    setSuccess(true);
+    setMagicLinkSent(true);
     setLoading(false);
   };
 
@@ -67,15 +51,25 @@ export default function SignupPage() {
     }
   };
 
-  if (success) {
+  if (magicLinkSent) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow text-center">
+          <div className="text-5xl">✉️</div>
           <h2 className="text-2xl font-bold text-gray-900">Check your email</h2>
           <p className="text-gray-600">
-            We&apos;ve sent you a confirmation email. Please click the link to verify your account.
+            We&apos;ve sent a magic link to <strong>{email}</strong>. Click the link to complete signup.
           </p>
-          <Link href="/login" className="text-indigo-600 hover:text-indigo-500">
+          <p className="text-sm text-gray-500">
+            Didn&apos;t receive it? Check your spam folder or{' '}
+            <button
+              onClick={() => setMagicLinkSent(false)}
+              className="text-indigo-600 hover:text-indigo-500 underline"
+            >
+              try again
+            </button>
+          </p>
+          <Link href="/login" className="block text-sm text-indigo-600 hover:text-indigo-500">
             Back to login
           </Link>
         </div>
@@ -126,51 +120,20 @@ export default function SignupPage() {
         </div>
 
         <form className="space-y-6" onSubmit={handleSignup}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email address
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            />
           </div>
 
           <button
@@ -178,8 +141,12 @@ export default function SignupPage() {
             disabled={loading}
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
           >
-            {loading ? 'Creating account...' : 'Sign up'}
+            {loading ? 'Sending...' : 'Send magic link'}
           </button>
+
+          <p className="text-center text-sm text-gray-500">
+            No password needed — we&apos;ll email you a link to sign in.
+          </p>
 
           <div className="text-center">
             <Link href="/login" className="text-sm text-indigo-600 hover:text-indigo-500">
