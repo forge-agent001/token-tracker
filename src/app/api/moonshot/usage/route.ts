@@ -26,8 +26,8 @@ export async function GET() {
     // Decrypt the API key
     const apiKey = decrypt(apiKeyData.encrypted_key);
 
-    // Fetch balance from Moonshot API
-    const response = await fetch('https://api.moonshot.ai/v1/balance', {
+    // Fetch balance from Moonshot API (correct endpoint: api.moonshot.cn)
+    const response = await fetch('https://api.moonshot.cn/v1/users/me/balance', {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
@@ -36,15 +36,17 @@ export async function GET() {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('Moonshot API error:', errorData);
+      console.error('Moonshot API error:', response.status, errorData);
       return NextResponse.json({ error: 'Failed to fetch balance' }, { status: 500 });
     }
 
     const data = await response.json();
 
     return NextResponse.json({
-      balance: data.data?.available_balance || data.data?.total_balance || '0',
-      currency: data.data?.currency || 'CNY',
+      balance: data.data?.available_balance ?? '0',
+      cashBalance: data.data?.cash_balance,
+      voucherBalance: data.data?.voucher_balance,
+      currency: 'CNY',
     });
   } catch (error) {
     console.error('Error fetching Moonshot usage:', error);
