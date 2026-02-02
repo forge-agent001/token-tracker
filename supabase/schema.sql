@@ -5,7 +5,7 @@ alter table auth.users enable row level security;
 CREATE TABLE api_keys (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  provider TEXT NOT NULL CHECK (provider IN ('anthropic', 'moonshot')),
+  provider TEXT NOT NULL CHECK (provider IN ('anthropic', 'anthropic-admin', 'moonshot')),
   encrypted_key TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -16,7 +16,7 @@ CREATE TABLE api_keys (
 CREATE TABLE usage_cache (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  provider TEXT NOT NULL CHECK (provider IN ('anthropic', 'moonshot')),
+  provider TEXT NOT NULL CHECK (provider IN ('anthropic', 'anthropic-admin', 'moonshot')),
   data JSONB NOT NULL,
   fetched_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

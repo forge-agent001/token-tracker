@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import ApiKeyManager from './ApiKeyManager';
@@ -9,10 +9,16 @@ import UsageStats from './UsageStats';
 interface DashboardProps {
   user: User;
   hasAnthropicKey: boolean;
+  hasAnthropicAdminKey: boolean;
   hasMoonshotKey: boolean;
 }
 
-export default function Dashboard({ user, hasAnthropicKey, hasMoonshotKey }: DashboardProps) {
+export default function Dashboard({ 
+  user, 
+  hasAnthropicKey, 
+  hasAnthropicAdminKey,
+  hasMoonshotKey 
+}: DashboardProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'settings'>('overview');
   const supabase = createClient();
 
@@ -74,6 +80,7 @@ export default function Dashboard({ user, hasAnthropicKey, hasMoonshotKey }: Das
         {activeTab === 'overview' && (
           <UsageStats 
             hasAnthropicKey={hasAnthropicKey}
+            hasAnthropicAdminKey={hasAnthropicAdminKey}
             hasMoonshotKey={hasMoonshotKey}
           />
         )}
@@ -81,6 +88,7 @@ export default function Dashboard({ user, hasAnthropicKey, hasMoonshotKey }: Das
         {activeTab === 'settings' && (
           <ApiKeyManager 
             hasAnthropicKey={hasAnthropicKey}
+            hasAnthropicAdminKey={hasAnthropicAdminKey}
             hasMoonshotKey={hasMoonshotKey}
           />
         )}

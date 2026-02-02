@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 
 interface UsageStatsProps {
   hasAnthropicKey: boolean;
+  hasAnthropicAdminKey: boolean;
   hasMoonshotKey: boolean;
 }
 
@@ -12,14 +13,19 @@ interface AnthropicStats {
   totalOutputTokens: number;
   totalCost: number;
   dailyUsage: { date: string; input: number; output: number; cost: number }[];
+  requiresAdminKey?: boolean;
+  isRealData?: boolean;
+  message?: string;
 }
 
 interface MoonshotStats {
   balance: string;
   currency: string;
+  cashBalance?: number;
+  voucherBalance?: number;
 }
 
-export default function UsageStats({ hasAnthropicKey, hasMoonshotKey }: UsageStatsProps) {
+export default function UsageStats({ hasAnthropicKey, hasAnthropicAdminKey, hasMoonshotKey }: UsageStatsProps) {
   const [loading, setLoading] = useState(false);
   const [anthropicStats, setAnthropicStats] = useState<AnthropicStats | null>(null);
   const [moonshotStats, setMoonshotStats] = useState<MoonshotStats | null>(null);
@@ -30,7 +36,7 @@ export default function UsageStats({ hasAnthropicKey, hasMoonshotKey }: UsageSta
     setError(null);
 
     try {
-      if (hasAnthropicKey) {
+      if (hasAnthropicKey || hasAnthropicAdminKey) {
         const res = await fetch('/api/anthropic/usage');
         if (res.ok) {
           const data = await res.json();
@@ -54,7 +60,7 @@ export default function UsageStats({ hasAnthropicKey, hasMoonshotKey }: UsageSta
 
   useEffect(() => {
     fetchStats();
-  }, [hasAnthropicKey, hasMoonshotKey]);
+  }, [hasAnthropicKey, hasAnthropicAdminKey, hasMoonshotKey]);
 
   return (
     <div className="space-y-8">
@@ -81,15 +87,39 @@ export default function UsageStats({ hasAnthropicKey, hasMoonshotKey }: UsageSta
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Anthropic</h3>
-            <div className={`w-3 h-3 rounded-full ${hasAnthropicKey ? 'bg-green-500' : 'bg-gray-300'}`} />
+            <div className={`w-3 h-3 rounded-full ${hasAnthropicAdminKey ? 'bg-green-500' : hasAnthropicKey ? 'bg-yellow-500' : 'bg-gray-300'}`} />
           </div>
 
-          {!hasAnthropicKey ? (
+          {!hasAnthropicKey && !hasAnthropicAdminKey ? (
             <p className="text-gray-500 text-sm">
               Add your Anthropic API key in the API Keys tab to see usage stats.
             </p>
+          ) : anthropicStats?.requiresAdminKey ? (
+            <div className="space-y-4">
+              <div className="bg-yellow-50 p-4 rounded-md">
+                <p className="text-sm text-yellow-800">
+                  <strong>Admin Key Required</strong>
+                </p>
+                <p className="text-sm text-yellow-700 mt-1">
+                  {anthropicStats.message || 'Add an Anthropic Admin API key to see real usage data. Regular API keys cannot access usage/cost information.'}
+                </p>
+              </div>
+              <a 
+                href="https://console.anthropic.com/settings/billing" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm text-indigo-600 hover:text-indigo-800 underline"
+              >
+                View usage in Anthropic Console →
+              </a>
+            </div>
           ) : anthropicStats ? (
             <div className="space-y-4">
+              {anthropicStats.isRealData && (
+                <div className="bg-green-50 px-3 py-1 rounded-full inline-block">
+                  <span className="text-xs text-green-700 font-medium">Live Data</span>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-blue-50 p-3 rounded-md">
                   <p className="text-xs text-blue-600 uppercase font-semibold">Input Tokens</p>
@@ -105,7 +135,7 @@ export default function UsageStats({ hasAnthropicKey, hasMoonshotKey }: UsageSta
                 </div>
               </div>
               <div className="bg-gray-50 p-3 rounded-md">
-                <p className="text-xs text-gray-600 uppercase font-semibold">Estimated Cost</p>
+                <p className="text-xs text-gray-600 uppercase font-semibold">Cost</p>
                 <p className="text-2xl font-bold text-gray-900">
                   ${anthropicStats.totalCost.toFixed(2)}
                 </p>
@@ -130,7 +160,7 @@ export default function UsageStats({ hasAnthropicKey, hasMoonshotKey }: UsageSta
           ) : moonshotStats ? (
             <div className="space-y-4">
               <div className="bg-green-50 p-4 rounded-md">
-                <p className="text-xs text-green-600 uppercase font-semibold">Current Balance</p>
+                <p className="text-xs text-green-600 uppercase font-semibold">Available Balance</p>
                 <p className="text-3xl font-bold text-green-900">
                   {moonshotStats.currency === 'CNY' ? '¥' : '$'}
                   {parseFloat(moonshotStats.balance).toFixed(2)}
@@ -139,6 +169,22 @@ export default function UsageStats({ hasAnthropicKey, hasMoonshotKey }: UsageSta
                   {moonshotStats.currency}
                 </p>
               </div>
+              {(moonshotStats.cashBalance !== undefined || moonshotStats.voucherBalance !== undefined) && (
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {moonshotStats.cashBalance !== undefined && (
+                    <div className="bg-gray-50 p-2 rounded">
+                      <span className="text-gray-500">Cash:</span>{' '}
+                      <span className="font-medium">${moonshotStats.cashBalance.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {moonshotStats.voucherBalance !== undefined && (
+                    <div className="bg-gray-50 p-2 rounded">
+                      <span className="text-gray-500">Voucher:</span>{' '}
+                      <span className="font-medium">${moonshotStats.voucherBalance.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
               <p className="text-xs text-gray-500">
                 Moonshot provides balance info only. Token-level usage is not available via API.
               </p>

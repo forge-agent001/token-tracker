@@ -3,16 +3,20 @@ import { encrypt } from '@/lib/encryption';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Allowed providers - strict validation
-const ALLOWED_PROVIDERS = ['anthropic', 'moonshot'] as const;
+const ALLOWED_PROVIDERS = ['anthropic', 'anthropic-admin', 'moonshot'] as const;
 type Provider = typeof ALLOWED_PROVIDERS[number];
 
 // Basic API key format validation
 function isValidApiKeyFormat(provider: Provider, key: string): boolean {
   if (!key || typeof key !== 'string') return false;
   if (key.length < 20 || key.length > 200) return false;
-  
+
   // Basic format checks (not exhaustive, but catches obvious issues)
   if (provider === 'anthropic') {
+    return key.startsWith('sk-ant-') || key.startsWith('sk-');
+  }
+  if (provider === 'anthropic-admin') {
+    // Admin keys typically start with sk-ant-admin- or similar
     return key.startsWith('sk-ant-') || key.startsWith('sk-');
   }
   if (provider === 'moonshot') {

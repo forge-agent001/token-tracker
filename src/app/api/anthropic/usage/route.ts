@@ -11,67 +11,100 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get the encrypted API key
-    const { data: apiKeyData } = await supabase
+    // Try to get the admin API key first
+    const { data: adminKeyData } = await supabase
       .from('api_keys')
       .select('encrypted_key')
       .eq('user_id', user.id)
-      .eq('provider', 'anthropic')
+      .eq('provider', 'anthropic-admin')
       .single();
 
-    if (!apiKeyData) {
-      return NextResponse.json({ error: 'No API key found' }, { status: 404 });
+    // If admin key exists, fetch real usage data
+    if (adminKeyData) {
+      const adminKey = decrypt(adminKeyData.encrypted_key);
+
+      // Calculate date range (last 7 days)
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 7);
+
+      try {
+        // Fetch cost report from Anthropic Admin API
+        const costResponse = await fetch(
+          `https://api.anthropic.com/v1/organizations/cost_report?` +
+          `starting_at=${startDate.toISOString()}&` +
+          `ending_at=${endDate.toISOString()}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${adminKey}`,
+              'anthropic-version': '2023-06-01',
+            },
+          }
+        );
+
+        if (costResponse.ok) {
+          const costData = await costResponse.json();
+
+          // Aggregate data by date
+          const dailyMap = new Map();
+          let totalInputTokens = 0;
+          let totalOutputTokens = 0;
+          let totalCost = 0;
+
+          for (const entry of costData.data || []) {
+            const date = entry.starting_at?.split('T')[0];
+            if (!date) continue;
+
+            if (!dailyMap.has(date)) {
+              dailyMap.set(date, { date, input: 0, output: 0, cost: 0 });
+            }
+
+            const day = dailyMap.get(date);
+            day.input += entry.input_tokens || 0;
+            day.output += entry.output_tokens || 0;
+            day.cost += entry.cost_usd || 0;
+
+            totalInputTokens += entry.input_tokens || 0;
+            totalOutputTokens += entry.output_tokens || 0;
+            totalCost += entry.cost_usd || 0;
+          }
+
+          const dailyUsage = Array.from(dailyMap.values()).sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+          );
+
+          return NextResponse.json({
+            totalInputTokens,
+            totalOutputTokens,
+            totalCost,
+            dailyUsage,
+            isRealData: true,
+          });
+        } else {
+          const errorText = await costResponse.text();
+          console.error('Anthropic Admin API error:', costResponse.status, errorText);
+          // Fall through to show requiresAdminKey message
+        }
+      } catch (error) {
+        console.error('Error fetching from Anthropic Admin API:', error);
+        // Fall through to show requiresAdminKey message
+      }
+
+      return NextResponse.json({
+        error: 'Failed to fetch usage from Admin API',
+        requiresAdminKey: true,
+        adminKeyError: true,
+      }, { status: 500 });
     }
 
-    // Decrypt the API key
-    const apiKey = decrypt(apiKeyData.encrypted_key);
-
-    // Fetch usage from Anthropic API
-    // Anthropic's usage API requires an admin key and org ID
-    // For now, we'll return mock data or fetch what we can
-    
-    // Try to get usage data from Anthropic
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 7);
-
-    // Anthropic doesn't have a simple token usage endpoint for regular API keys
-    // The cost/usage API requires an admin key with org-level access
-    // For this demo, we'll return simulated data
-    
-    // In production, you would use:
-    // const response = await fetch(
-    //   `https://api.anthropic.com/v1/organizations/{org_id}/cost_report?` +
-    //   `start_time=${startDate.toISOString()}&end_time=${endDate.toISOString()}`,
-    //   {
-    //     headers: {
-    //       'Authorization': `Bearer ${apiKey}`,
-    //       'anthropic-version': '2023-06-01',
-    //     },
-    //   }
-    // );
-
-    // Simulated data for demo
-    const dailyUsage = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (6 - i));
-      return {
-        date: date.toISOString().split('T')[0],
-        input: Math.floor(Math.random() * 100000),
-        output: Math.floor(Math.random() * 50000),
-        cost: Math.random() * 10,
-      };
-    });
-
-    const totalInputTokens = dailyUsage.reduce((sum, d) => sum + d.input, 0);
-    const totalOutputTokens = dailyUsage.reduce((sum, d) => sum + d.output, 0);
-    const totalCost = dailyUsage.reduce((sum, d) => sum + d.cost, 0);
-
+    // No admin key - return message indicating admin key is needed for real data
     return NextResponse.json({
-      totalInputTokens,
-      totalOutputTokens,
-      totalCost,
-      dailyUsage,
+      requiresAdminKey: true,
+      message: 'Add an Anthropic Admin API key in settings to see real usage data. Regular API keys cannot access usage/cost information.',
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      totalCost: 0,
+      dailyUsage: [],
     });
   } catch (error) {
     console.error('Error fetching Anthropic usage:', error);
