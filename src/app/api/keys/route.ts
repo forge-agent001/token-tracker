@@ -2,6 +2,25 @@ import { createClient } from '@/lib/supabase/server';
 import { encrypt } from '@/lib/encryption';
 import { NextRequest, NextResponse } from 'next/server';
 
+// Allowed providers - strict validation
+const ALLOWED_PROVIDERS = ['anthropic', 'moonshot'] as const;
+type Provider = typeof ALLOWED_PROVIDERS[number];
+
+// Basic API key format validation
+function isValidApiKeyFormat(provider: Provider, key: string): boolean {
+  if (!key || typeof key !== 'string') return false;
+  if (key.length < 20 || key.length > 200) return false;
+  
+  // Basic format checks (not exhaustive, but catches obvious issues)
+  if (provider === 'anthropic') {
+    return key.startsWith('sk-ant-') || key.startsWith('sk-');
+  }
+  if (provider === 'moonshot') {
+    return key.startsWith('sk-');
+  }
+  return false;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -11,10 +30,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { provider, apiKey } = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
 
-    if (!provider || !apiKey) {
-      return NextResponse.json({ error: 'Missing provider or API key' }, { status: 400 });
+    const { provider, apiKey } = body;
+
+    // Strict provider validation
+    if (!provider || !ALLOWED_PROVIDERS.includes(provider)) {
+      return NextResponse.json({ error: 'Invalid provider' }, { status: 400 });
+    }
+
+    if (!apiKey || typeof apiKey !== 'string') {
+      return NextResponse.json({ error: 'Invalid API key' }, { status: 400 });
+    }
+
+    // Validate API key format
+    if (!isValidApiKeyFormat(provider as Provider, apiKey)) {
+      return NextResponse.json({ error: 'Invalid API key format' }, { status: 400 });
     }
 
     // Encrypt the API key
@@ -56,8 +92,9 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const provider = searchParams.get('provider');
 
-    if (!provider) {
-      return NextResponse.json({ error: 'Missing provider' }, { status: 400 });
+    // Strict provider validation
+    if (!provider || !ALLOWED_PROVIDERS.includes(provider as Provider)) {
+      return NextResponse.json({ error: 'Invalid provider' }, { status: 400 });
     }
 
     const { error } = await supabase
