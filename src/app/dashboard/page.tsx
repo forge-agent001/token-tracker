@@ -17,8 +17,8 @@ export default async function DashboardPage() {
     .select('*')
     .eq('user_id', user.id);
 
-  const anthropicKey = apiKeys?.find(k => k.provider === 'anthropic');
-  const moonshotKey = apiKeys?.find(k => k.provider === 'moonshot');
+  const anthropicKey = apiKeys?.find((k: { provider: string }) => k.provider === 'anthropic');
+  const moonshotKey = apiKeys?.find((k: { provider: string }) => k.provider === 'moonshot');
 
   return (
     <Dashboard 

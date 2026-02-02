@@ -6,7 +6,8 @@ const KEY_LENGTH = 32;
 function getKey(): Buffer {
   const key = process.env.ENCRYPTION_KEY;
   if (!key) {
-    throw new Error('ENCRYPTION_KEY not set');
+    // Return a default key for build time (will not be used in production)
+    return Buffer.alloc(32, '0');
   }
   // If key is base64 encoded, decode it
   if (key.length === 44) {
@@ -17,6 +18,10 @@ function getKey(): Buffer {
 }
 
 export function encrypt(text: string): string {
+  if (!process.env.ENCRYPTION_KEY) {
+    throw new Error('ENCRYPTION_KEY not set');
+  }
+  
   const iv = crypto.randomBytes(16);
   const key = getKey();
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
@@ -31,6 +36,10 @@ export function encrypt(text: string): string {
 }
 
 export function decrypt(encryptedData: string): string {
+  if (!process.env.ENCRYPTION_KEY) {
+    throw new Error('ENCRYPTION_KEY not set');
+  }
+  
   const [ivHex, authTagHex, encrypted] = encryptedData.split(':');
   
   if (!ivHex || !authTagHex || !encrypted) {
