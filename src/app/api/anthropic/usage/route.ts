@@ -40,9 +40,10 @@ export async function GET() {
     startDate.setDate(startDate.getDate() - 7);
 
     try {
-      // Fetch cost report from Anthropic Admin API
-      const costResponse = await fetch(
-        `https://api.anthropic.com/v1/organizations/cost_report?` +
+      // Fetch usage report from Anthropic Admin API
+      // Note: cost_report endpoint doesn't exist; use usage_report/messages
+      const usageResponse = await fetch(
+        `https://api.anthropic.com/v1/organizations/usage_report/messages?` +
         `starting_at=${startDate.toISOString()}&` +
         `ending_at=${endDate.toISOString()}`,
         {
@@ -53,36 +54,42 @@ export async function GET() {
         }
       );
 
-      if (costResponse.ok) {
-        const costData = await costResponse.json();
+      if (usageResponse.ok) {
+        const usageData = await usageResponse.json();
 
         // Aggregate data by date
         const dailyMap = new Map();
         let totalInputTokens = 0;
         let totalOutputTokens = 0;
-        let totalCost = 0;
 
-        for (const entry of costData.data || []) {
-          const date = entry.starting_at?.split('T')[0];
+        for (const dayEntry of usageData.data || []) {
+          const date = dayEntry.starting_at?.split('T')[0];
           if (!date) continue;
 
-          if (!dailyMap.has(date)) {
-            dailyMap.set(date, { date, input: 0, output: 0, cost: 0 });
+          // Sum up all results for this day
+          let dayInput = 0;
+          let dayOutput = 0;
+
+          for (const result of dayEntry.results || []) {
+            // Cache reads count as input tokens
+            dayInput += (result.uncached_input_tokens || 0) +
+                        (result.cache_read_input_tokens || 0) +
+                        (result.cache_creation?.ephemeral_1h_input_tokens || 0) +
+                        (result.cache_creation?.ephemeral_5m_input_tokens || 0);
+            dayOutput += result.output_tokens || 0;
           }
 
-          const day = dailyMap.get(date);
-          day.input += entry.input_tokens || 0;
-          day.output += entry.output_tokens || 0;
-          day.cost += entry.cost_usd || 0;
-
-          totalInputTokens += entry.input_tokens || 0;
-          totalOutputTokens += entry.output_tokens || 0;
-          totalCost += entry.cost_usd || 0;
+          dailyMap.set(date, { date, input: dayInput, output: dayOutput });
+          totalInputTokens += dayInput;
+          totalOutputTokens += dayOutput;
         }
 
         const dailyUsage = Array.from(dailyMap.values()).sort(
           (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
         );
+
+        // Estimate cost (Claude 3.5 Sonnet pricing: $3/M input, $15/M output)
+        const totalCost = (totalInputTokens / 1000000) * 3 + (totalOutputTokens / 1000000) * 15;
 
         return NextResponse.json({
           totalInputTokens,
@@ -92,8 +99,8 @@ export async function GET() {
           isRealData: true,
         });
       } else {
-        const errorText = await costResponse.text();
-        console.error('Anthropic Admin API error:', costResponse.status, errorText);
+        const errorText = await usageResponse.text();
+        console.error('Anthropic Admin API error:', usageResponse.status, errorText);
       }
     } catch (error) {
       console.error('Error fetching from Anthropic Admin API:', error);
