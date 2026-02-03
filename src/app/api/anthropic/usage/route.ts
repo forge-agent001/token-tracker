@@ -79,7 +79,9 @@ export async function GET() {
             dayOutput += result.output_tokens || 0;
           }
 
-          dailyMap.set(date, { date, input: dayInput, output: dayOutput });
+          // Estimate daily cost (Claude 3.5 Sonnet pricing: $3/M input, $15/M output)
+          const dayCost = (dayInput / 1000000) * 3 + (dayOutput / 1000000) * 15;
+          dailyMap.set(date, { date, input: dayInput, output: dayOutput, cost: dayCost });
           totalInputTokens += dayInput;
           totalOutputTokens += dayOutput;
         }
@@ -88,8 +90,8 @@ export async function GET() {
           (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
         );
 
-        // Estimate cost (Claude 3.5 Sonnet pricing: $3/M input, $15/M output)
-        const totalCost = (totalInputTokens / 1000000) * 3 + (totalOutputTokens / 1000000) * 15;
+        // Total cost from daily entries
+        const totalCost = dailyUsage.reduce((sum, day) => sum + day.cost, 0);
 
         return NextResponse.json({
           totalInputTokens,
