@@ -10,12 +10,20 @@ interface DashboardProps {
   user: User;
   hasAnthropicAdminKey: boolean;
   hasMoonshotKey: boolean;
+  hasOpenAIKey: boolean;
+  hasDeepSeekKey: boolean;
+  hasMiniMaxKey: boolean;
+  hasGoogleKey: boolean;
 }
 
 export default function Dashboard({ 
   user, 
   hasAnthropicAdminKey,
-  hasMoonshotKey 
+  hasMoonshotKey,
+  hasOpenAIKey,
+  hasDeepSeekKey,
+  hasMiniMaxKey,
+  hasGoogleKey
 }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'settings'>('overview');
   const supabase = createClient();
@@ -79,6 +87,10 @@ export default function Dashboard({
           <UsageStats 
             hasAnthropicAdminKey={hasAnthropicAdminKey}
             hasMoonshotKey={hasMoonshotKey}
+            hasOpenAIKey={hasOpenAIKey}
+            hasDeepSeekKey={hasDeepSeekKey}
+            hasMiniMaxKey={hasMiniMaxKey}
+            hasGoogleKey={hasGoogleKey}
           />
         )}
 
@@ -86,6 +98,10 @@ export default function Dashboard({
           <ApiKeyManager 
             hasAnthropicAdminKey={hasAnthropicAdminKey}
             hasMoonshotKey={hasMoonshotKey}
+            hasOpenAIKey={hasOpenAIKey}
+            hasDeepSeekKey={hasDeepSeekKey}
+            hasMiniMaxKey={hasMiniMaxKey}
+            hasGoogleKey={hasGoogleKey}
           />
         )}
       </main>

@@ -5,14 +5,26 @@ import { useState } from 'react';
 interface ApiKeyManagerProps {
   hasAnthropicAdminKey: boolean;
   hasMoonshotKey: boolean;
+  hasOpenAIKey: boolean;
+  hasDeepSeekKey: boolean;
+  hasMiniMaxKey: boolean;
+  hasGoogleKey: boolean;
 }
 
 export default function ApiKeyManager({ 
   hasAnthropicAdminKey,
-  hasMoonshotKey 
+  hasMoonshotKey,
+  hasOpenAIKey,
+  hasDeepSeekKey,
+  hasMiniMaxKey,
+  hasGoogleKey
 }: ApiKeyManagerProps) {
   const [anthropicAdminKey, setAnthropicAdminKey] = useState('');
   const [moonshotKey, setMoonshotKey] = useState('');
+  const [openaiKey, setOpenaiKey] = useState('');
+  const [deepseekKey, setDeepseekKey] = useState('');
+  const [minimaxKey, setMinimaxKey] = useState('');
+  const [googleKey, setGoogleKey] = useState('');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -64,7 +76,103 @@ export default function ApiKeyManager({
     }
   };
 
-  const deleteKey = async (provider: 'anthropic-admin' | 'moonshot') => {
+  const saveOpenAIKey = async () => {
+    if (!openaiKey.trim()) return;
+    
+    setSaving(true);
+    setMessage(null);
+    
+    try {
+      const res = await fetch('/api/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'openai', apiKey: openaiKey }),
+      });
+      
+      if (!res.ok) throw new Error('Failed to save key');
+      
+      setMessage({ type: 'success', text: 'OpenAI API key saved!' });
+      setOpenaiKey('');
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to save API key' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveDeepSeekKey = async () => {
+    if (!deepseekKey.trim()) return;
+    
+    setSaving(true);
+    setMessage(null);
+    
+    try {
+      const res = await fetch('/api/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'deepseek', apiKey: deepseekKey }),
+      });
+      
+      if (!res.ok) throw new Error('Failed to save key');
+      
+      setMessage({ type: 'success', text: 'DeepSeek API key saved!' });
+      setDeepseekKey('');
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to save API key' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveMiniMaxKey = async () => {
+    if (!minimaxKey.trim()) return;
+    
+    setSaving(true);
+    setMessage(null);
+    
+    try {
+      const res = await fetch('/api/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'minimax', apiKey: minimaxKey }),
+      });
+      
+      if (!res.ok) throw new Error('Failed to save key');
+      
+      setMessage({ type: 'success', text: 'MiniMax API key saved!' });
+      setMinimaxKey('');
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to save API key' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveGoogleKey = async () => {
+    if (!googleKey.trim()) return;
+    
+    setSaving(true);
+    setMessage(null);
+    
+    try {
+      const res = await fetch('/api/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'google', apiKey: googleKey }),
+      });
+      
+      if (!res.ok) throw new Error('Failed to save key');
+      
+      setMessage({ type: 'success', text: 'Google API key saved!' });
+      setGoogleKey('');
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to save API key' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteKey = async (provider: 'anthropic-admin' | 'moonshot' | 'openai' | 'deepseek' | 'minimax' | 'google') => {
     if (!confirm(`Delete your ${provider} API key?`)) return;
     
     try {
@@ -177,6 +285,182 @@ export default function ApiKeyManager({
           {hasMoonshotKey && (
             <button
               onClick={() => deleteKey('moonshot')}
+              className="text-sm text-red-600 hover:text-red-800"
+            >
+              Remove API key
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* OpenAI Section */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">OpenAI</h3>
+            <p className="text-sm text-gray-500">Track GPT/ChatGPT API usage and credits</p>
+          </div>
+          <div className={`px-3 py-1 rounded-full text-sm ${hasOpenAIKey ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+            {hasOpenAIKey ? 'Connected' : 'Not Connected'}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">API Key</label>
+            <div className="mt-1 flex space-x-2">
+              <input
+                type="password"
+                value={openaiKey}
+                onChange={(e) => setOpenaiKey(e.target.value)}
+                placeholder={hasOpenAIKey ? '••••••••••••••••' : 'sk-proj-... or sk-...'}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <button
+                onClick={saveOpenAIKey}
+                disabled={saving || !openaiKey.trim()}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+
+          {hasOpenAIKey && (
+            <button
+              onClick={() => deleteKey('openai')}
+              className="text-sm text-red-600 hover:text-red-800"
+            >
+              Remove API key
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* DeepSeek Section */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">DeepSeek</h3>
+            <p className="text-sm text-gray-500">Track DeepSeek V3 API usage</p>
+          </div>
+          <div className={`px-3 py-1 rounded-full text-sm ${hasDeepSeekKey ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+            {hasDeepSeekKey ? 'Connected' : 'Not Connected'}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">API Key</label>
+            <div className="mt-1 flex space-x-2">
+              <input
+                type="password"
+                value={deepseekKey}
+                onChange={(e) => setDeepseekKey(e.target.value)}
+                placeholder={hasDeepSeekKey ? '••••••••••••••••' : 'sk-...'}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <button
+                onClick={saveDeepSeekKey}
+                disabled={saving || !deepseekKey.trim()}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+
+          {hasDeepSeekKey && (
+            <button
+              onClick={() => deleteKey('deepseek')}
+              className="text-sm text-red-600 hover:text-red-800"
+            >
+              Remove API key
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* MiniMax Section */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">MiniMax</h3>
+            <p className="text-sm text-gray-500">Store MiniMax API key (balance via console)</p>
+          </div>
+          <div className={`px-3 py-1 rounded-full text-sm ${hasMiniMaxKey ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+            {hasMiniMaxKey ? 'Connected' : 'Not Connected'}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">API Key</label>
+            <div className="mt-1 flex space-x-2">
+              <input
+                type="password"
+                value={minimaxKey}
+                onChange={(e) => setMinimaxKey(e.target.value)}
+                placeholder={hasMiniMaxKey ? '••••••••••••••••' : 'sk-...'}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <button
+                onClick={saveMiniMaxKey}
+                disabled={saving || !minimaxKey.trim()}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+
+          {hasMiniMaxKey && (
+            <button
+              onClick={() => deleteKey('minimax')}
+              className="text-sm text-red-600 hover:text-red-800"
+            >
+              Remove API key
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Google/Gemini Section */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">Google Gemini</h3>
+            <p className="text-sm text-gray-500">Store Google API key (billing via Cloud Console)</p>
+          </div>
+          <div className={`px-3 py-1 rounded-full text-sm ${hasGoogleKey ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+            {hasGoogleKey ? 'Connected' : 'Not Connected'}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">API Key</label>
+            <div className="mt-1 flex space-x-2">
+              <input
+                type="password"
+                value={googleKey}
+                onChange={(e) => setGoogleKey(e.target.value)}
+                placeholder={hasGoogleKey ? '••••••••••••••••' : 'AIza...'}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <button
+                onClick={saveGoogleKey}
+                disabled={saving || !googleKey.trim()}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+
+          {hasGoogleKey && (
+            <button
+              onClick={() => deleteKey('google')}
               className="text-sm text-red-600 hover:text-red-800"
             >
               Remove API key

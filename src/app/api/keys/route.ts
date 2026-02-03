@@ -3,23 +3,34 @@ import { encrypt } from '@/lib/encryption';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Allowed providers - strict validation
-const ALLOWED_PROVIDERS = ['anthropic-admin', 'moonshot'] as const;
+const ALLOWED_PROVIDERS = ['anthropic-admin', 'moonshot', 'openai', 'deepseek', 'minimax', 'google'] as const;
 type Provider = typeof ALLOWED_PROVIDERS[number];
 
 // Basic API key format validation
 function isValidApiKeyFormat(provider: Provider, key: string): boolean {
   if (!key || typeof key !== 'string') return false;
-  if (key.length < 20 || key.length > 200) return false;
+  if (key.length < 20 || key.length > 500) return false;
 
   // Basic format checks (not exhaustive, but catches obvious issues)
-  if (provider === 'anthropic-admin') {
-    // Admin keys typically start with sk-ant-admin- or similar, but accept any sk-ant- or sk- prefix
-    return key.startsWith('sk-ant-') || key.startsWith('sk-');
+  switch (provider) {
+    case 'anthropic-admin':
+      // Admin keys typically start with sk-ant-admin- or similar, but accept any sk-ant- or sk- prefix
+      return key.startsWith('sk-ant-') || key.startsWith('sk-');
+    case 'moonshot':
+      return key.startsWith('sk-');
+    case 'openai':
+      // OpenAI keys: sk-proj-* (new) or sk-* (legacy)
+      return key.startsWith('sk-proj-') || key.startsWith('sk-');
+    case 'deepseek':
+      return key.startsWith('sk-');
+    case 'minimax':
+      return key.startsWith('sk-');
+    case 'google':
+      // Google API keys typically start with AIza
+      return key.startsWith('AIza');
+    default:
+      return false;
   }
-  if (provider === 'moonshot') {
-    return key.startsWith('sk-');
-  }
-  return false;
 }
 
 export async function POST(request: NextRequest) {

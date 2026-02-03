@@ -1,4 +1,4 @@
-export type Provider = 'anthropic-admin' | 'moonshot';
+export type Provider = 'anthropic-admin' | 'moonshot' | 'openai' | 'deepseek' | 'minimax' | 'google';
 
 export interface ApiKey {
   id: string;
@@ -42,6 +42,43 @@ export interface MoonshotUsage {
   // Only balance information is available
 }
 
+// OpenAI API Types
+export interface OpenAIUsage {
+  total_usage: number; // in cents
+  daily_usage: {
+    date: string;
+    usage: number; // in cents
+  }[];
+}
+
+export interface OpenAICredits {
+  total_granted: number;
+  total_used: number;
+  total_available: number;
+}
+
+// DeepSeek API Types
+export interface DeepSeekBalance {
+  balance: string;
+  currency: string;
+}
+
+// MiniMax API Types
+export interface MiniMaxBalance {
+  // MiniMax doesn't provide a public balance API
+  // This is a placeholder for future implementation
+  unavailable: true;
+  message: string;
+}
+
+// Google/Gemini API Types
+export interface GoogleUsage {
+  // Google Cloud billing requires complex setup
+  // This is a placeholder directing to Cloud Console
+  consoleUrl: string;
+  message: string;
+}
+
 // UI Types
 export interface DashboardStats {
   anthropic: {
@@ -56,5 +93,28 @@ export interface DashboardStats {
     balance: string;
     currency: string;
     lastUpdated?: string;
+  };
+  openai: {
+    isConnected: boolean;
+    totalUsed: number;
+    totalGranted: number;
+    totalAvailable: number;
+    lastUpdated?: string;
+  };
+  deepseek: {
+    isConnected: boolean;
+    balance: string;
+    currency: string;
+    lastUpdated?: string;
+  };
+  minimax: {
+    isConnected: boolean;
+    unavailable: boolean;
+    message: string;
+  };
+  google: {
+    isConnected: boolean;
+    consoleUrl: string;
+    message: string;
   };
 }

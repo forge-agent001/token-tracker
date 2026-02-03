@@ -5,6 +5,10 @@ import { useState, useEffect } from 'react';
 interface UsageStatsProps {
   hasAnthropicAdminKey: boolean;
   hasMoonshotKey: boolean;
+  hasOpenAIKey: boolean;
+  hasDeepSeekKey: boolean;
+  hasMiniMaxKey: boolean;
+  hasGoogleKey: boolean;
 }
 
 interface AnthropicStats {
@@ -24,10 +28,48 @@ interface MoonshotStats {
   voucherBalance?: number;
 }
 
-export default function UsageStats({ hasAnthropicAdminKey, hasMoonshotKey }: UsageStatsProps) {
+interface OpenAIStats {
+  total_granted: number;
+  total_used: number;
+  total_available: number;
+  total_usage: number;
+  daily_usage: { date: string; usage: number }[];
+}
+
+interface DeepSeekStats {
+  balance: string;
+  currency: string;
+  total_balance?: string;
+  granted_balance?: string;
+  topped_up_balance?: string;
+}
+
+interface MiniMaxStats {
+  unavailable: boolean;
+  message: string;
+  consoleUrl?: string;
+}
+
+interface GoogleStats {
+  consoleUrl: string;
+  message: string;
+}
+
+export default function UsageStats({ 
+  hasAnthropicAdminKey, 
+  hasMoonshotKey,
+  hasOpenAIKey,
+  hasDeepSeekKey,
+  hasMiniMaxKey,
+  hasGoogleKey
+}: UsageStatsProps) {
   const [loading, setLoading] = useState(false);
   const [anthropicStats, setAnthropicStats] = useState<AnthropicStats | null>(null);
   const [moonshotStats, setMoonshotStats] = useState<MoonshotStats | null>(null);
+  const [openaiStats, setOpenaiStats] = useState<OpenAIStats | null>(null);
+  const [deepseekStats, setDeepseekStats] = useState<DeepSeekStats | null>(null);
+  const [minimaxStats, setMinimaxStats] = useState<MiniMaxStats | null>(null);
+  const [googleStats, setGoogleStats] = useState<GoogleStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStats = async () => {
@@ -50,6 +92,38 @@ export default function UsageStats({ hasAnthropicAdminKey, hasMoonshotKey }: Usa
           setMoonshotStats(data);
         }
       }
+
+      if (hasOpenAIKey) {
+        const res = await fetch('/api/openai/usage');
+        if (res.ok) {
+          const data = await res.json();
+          setOpenaiStats(data);
+        }
+      }
+
+      if (hasDeepSeekKey) {
+        const res = await fetch('/api/deepseek/usage');
+        if (res.ok) {
+          const data = await res.json();
+          setDeepseekStats(data);
+        }
+      }
+
+      if (hasMiniMaxKey) {
+        const res = await fetch('/api/minimax/usage');
+        if (res.ok) {
+          const data = await res.json();
+          setMinimaxStats(data);
+        }
+      }
+
+      if (hasGoogleKey) {
+        const res = await fetch('/api/google/usage');
+        if (res.ok) {
+          const data = await res.json();
+          setGoogleStats(data);
+        }
+      }
     } catch {
       setError('Failed to fetch usage stats');
     } finally {
@@ -60,7 +134,7 @@ export default function UsageStats({ hasAnthropicAdminKey, hasMoonshotKey }: Usa
   useEffect(() => {
     fetchStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasAnthropicAdminKey, hasMoonshotKey]);
+  }, [hasAnthropicAdminKey, hasMoonshotKey, hasOpenAIKey, hasDeepSeekKey, hasMiniMaxKey, hasGoogleKey]);
 
   return (
     <div className="space-y-8">
@@ -188,6 +262,158 @@ export default function UsageStats({ hasAnthropicAdminKey, hasMoonshotKey }: Usa
               <p className="text-xs text-gray-500">
                 Moonshot provides balance info only. Token-level usage is not available via API.
               </p>
+            </div>
+          ) : (
+            <p className="text-gray-500">Loading...</p>
+          )}
+        </div>
+
+        {/* OpenAI Card */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">OpenAI</h3>
+            <div className={`w-3 h-3 rounded-full ${hasOpenAIKey ? 'bg-green-500' : 'bg-gray-300'}`} />
+          </div>
+
+          {!hasOpenAIKey ? (
+            <p className="text-gray-500 text-sm">
+              Add your OpenAI API key in the API Keys tab to see usage and credits.
+            </p>
+          ) : openaiStats ? (
+            <div className="space-y-4">
+              <div className="bg-green-50 p-4 rounded-md">
+                <p className="text-xs text-green-600 uppercase font-semibold">Available Credits</p>
+                <p className="text-3xl font-bold text-green-900">
+                  ${openaiStats.total_available.toFixed(2)}
+                </p>
+                <p className="text-xs text-green-600 mt-1">
+                  of ${openaiStats.total_granted.toFixed(2)} granted
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="bg-gray-50 p-2 rounded">
+                  <span className="text-gray-500">Used:</span>{' '}
+                  <span className="font-medium">${openaiStats.total_used.toFixed(2)}</span>
+                </div>
+                <div className="bg-gray-50 p-2 rounded">
+                  <span className="text-gray-500">7-Day Usage:</span>{' '}
+                  <span className="font-medium">${(openaiStats.total_usage / 100).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-500">Loading...</p>
+          )}
+        </div>
+
+        {/* DeepSeek Card */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">DeepSeek</h3>
+            <div className={`w-3 h-3 rounded-full ${hasDeepSeekKey ? 'bg-green-500' : 'bg-gray-300'}`} />
+          </div>
+
+          {!hasDeepSeekKey ? (
+            <p className="text-gray-500 text-sm">
+              Add your DeepSeek API key in the API Keys tab to see balance.
+            </p>
+          ) : deepseekStats ? (
+            <div className="space-y-4">
+              <div className="bg-green-50 p-4 rounded-md">
+                <p className="text-xs text-green-600 uppercase font-semibold">Available Balance</p>
+                <p className="text-3xl font-bold text-green-900">
+                  ${parseFloat(deepseekStats.balance).toFixed(2)}
+                </p>
+                <p className="text-xs text-green-600 mt-1">
+                  {deepseekStats.currency}
+                </p>
+              </div>
+              {(deepseekStats.granted_balance || deepseekStats.topped_up_balance) && (
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {deepseekStats.granted_balance && (
+                    <div className="bg-gray-50 p-2 rounded">
+                      <span className="text-gray-500">Granted:</span>{' '}
+                      <span className="font-medium">${parseFloat(deepseekStats.granted_balance).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {deepseekStats.topped_up_balance && (
+                    <div className="bg-gray-50 p-2 rounded">
+                      <span className="text-gray-500">Topped Up:</span>{' '}
+                      <span className="font-medium">${parseFloat(deepseekStats.topped_up_balance).toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-gray-500">Loading...</p>
+          )}
+        </div>
+
+        {/* MiniMax Card */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">MiniMax</h3>
+            <div className={`w-3 h-3 rounded-full ${hasMiniMaxKey ? 'bg-green-500' : 'bg-gray-300'}`} />
+          </div>
+
+          {!hasMiniMaxKey ? (
+            <p className="text-gray-500 text-sm">
+              Add your MiniMax API key in the API Keys tab.
+            </p>
+          ) : minimaxStats?.unavailable ? (
+            <div className="space-y-4">
+              <div className="bg-yellow-50 p-4 rounded-md">
+                <p className="text-sm text-yellow-800">
+                  <strong>Balance API Unavailable</strong>
+                </p>
+                <p className="text-sm text-yellow-700 mt-1">
+                  MiniMax does not provide a public balance API. Please check your balance on the MiniMax platform.
+                </p>
+              </div>
+              <a 
+                href={minimaxStats.consoleUrl || 'https://platform.minimax.io/'} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm text-indigo-600 hover:text-indigo-800 underline"
+              >
+                View balance in MiniMax Console →
+              </a>
+            </div>
+          ) : (
+            <p className="text-gray-500">Loading...</p>
+          )}
+        </div>
+
+        {/* Google/Gemini Card */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Google Gemini</h3>
+            <div className={`w-3 h-3 rounded-full ${hasGoogleKey ? 'bg-green-500' : 'bg-gray-300'}`} />
+          </div>
+
+          {!hasGoogleKey ? (
+            <p className="text-gray-500 text-sm">
+              Add your Google API key in the API Keys tab.
+            </p>
+          ) : googleStats ? (
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-md">
+                <p className="text-sm text-blue-800">
+                  <strong>Google Cloud Billing</strong>
+                </p>
+                <p className="text-sm text-blue-700 mt-1">
+                  {googleStats.message || 'View your Gemini usage and billing in the Google Cloud Console.'}
+                </p>
+              </div>
+              <a 
+                href={googleStats.consoleUrl || 'https://console.cloud.google.com/billing'} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm text-indigo-600 hover:text-indigo-800 underline"
+              >
+                View usage in Cloud Console →
+              </a>
             </div>
           ) : (
             <p className="text-gray-500">Loading...</p>
